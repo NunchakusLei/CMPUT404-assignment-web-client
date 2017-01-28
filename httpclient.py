@@ -2,13 +2,13 @@
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
 # Copyright 2017 Chenrui Lei
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,12 +33,61 @@ class HTTPResponse(object):
         self.code = code
         self.body = body
 
+    def __str__(self):
+        return str(self.code) + ' ' + str(self.body)
+
 class HTTPClient(object):
-    #def get_host_port(self,url):
+    def get_host_path_port(self,url):
+        if not len(url)>0:
+            raise()
+
+        # get host
+        if ('://' in url):
+            url_parts = url.split('://')
+            url_parts = url_parts[1]
+        else:
+            url_parts = url
+
+        if ('/' in url_parts):
+            url_parts_host = url_parts.split('/')
+            url_parts = url_parts_host
+        elif (':' in url_parts):
+            url_parts_host = url_parts.split(':')
+            url_parts = [url_parts]
+        else:
+            url_parts_host = [url_parts]
+            url_parts = [url_parts]
+        host = url_parts_host[0]
+
+        #print(type(url_parts))
+        # get port
+        if (':' in url_parts[-1]):
+            url_parts_port = url_parts[-1].split(':')
+            url_parts[-1] = url_parts_port[0]
+        else:
+            url_parts_port = ['80'] # the default port
+        port = url_parts_port[-1]
+
+        try:
+            port = int(port)
+        except:
+            raise
+
+        #print(type(url_parts))
+        # get path
+        if (len(url_parts)>1):
+            path = '/'.join(url_parts[1:])
+            path = '/' + path
+        else:
+            path = '/'
+
+        return host, path, port
 
     def connect(self, host, port):
         # use sockets!
-        return None
+        clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientSocket.connect((host, port))
+        return clientSocket
 
     def get_code(self, data):
         return None
@@ -61,6 +110,11 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
+    # send everything to the socket
+    def sendRequest(self, sock, request):
+        sock.sendall(request)
+        return
+
     def GET(self, url, args=None):
         code = 500
         body = ""
@@ -76,7 +130,7 @@ class HTTPClient(object):
             return self.POST( url, args )
         else:
             return self.GET( url, args )
-    
+
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
@@ -86,4 +140,6 @@ if __name__ == "__main__":
     elif (len(sys.argv) == 3):
         print client.command( sys.argv[2], sys.argv[1] )
     else:
-        print client.command( sys.argv[1] )   
+        print client.command( sys.argv[1] )
+
+    print(client.get_host_path_port(sys.argv[2]))
