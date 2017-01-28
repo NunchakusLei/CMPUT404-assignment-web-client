@@ -33,40 +33,34 @@ class HTTPResponse(object):
         self.code = code
         self.body = body
 
-    def __str__(self):
-        return str(self.code) + ' ' + str(self.body)
+    # def __str__(self):
+    #     return str(self.code) + ' ' + str(self.body)
 
 class HTTPClient(object):
     def get_host_path_port(self,url):
         if not len(url)>0:
-            raise()
+            raise
 
-        # get host
+        # get rid of protocal
         if ('://' in url):
             url_parts = url.split('://')
             url_parts = url_parts[1]
         else:
             url_parts = url
 
+        # get format [host (or host:port), path, path, ... ]
         if ('/' in url_parts):
-            url_parts_host = url_parts.split('/')
-            url_parts = url_parts_host
-        elif (':' in url_parts):
-            url_parts_host = url_parts.split(':')
-            url_parts = [url_parts]
+            url_parts = url_parts.split('/')
         else:
-            url_parts_host = [url_parts]
             url_parts = [url_parts]
-        host = url_parts_host[0]
 
-        #print(type(url_parts))
-        # get port
-        if (':' in url_parts[-1]):
-            url_parts_port = url_parts[-1].split(':')
-            url_parts[-1] = url_parts_port[0]
+        # get host and port
+        if (':' in url_parts[0]):
+            url_parts_host_port = url_parts[0].split(':')
         else:
-            url_parts_port = ['80'] # the default port
-        port = url_parts_port[-1]
+            url_parts_host_port = [url_parts[0],'80']
+        host = url_parts_host_port[0]
+        port = url_parts_host_port[1]
 
         try:
             port = int(port)
@@ -90,13 +84,22 @@ class HTTPClient(object):
         return clientSocket
 
     def get_code(self, data):
-        return None
+        data_parts = data.split('\r\n')
+        code = data_parts[0].split()[1]
+        return int(code)
 
     def get_headers(self,data):
-        return None
+        data_parts = data.split('\r\n\r\n')
+        headers = data_parts[0].split('\r\n')[1:]
+        return headers
 
     def get_body(self, data):
-        return None
+        data_parts = data.split('\r\n\r\n')
+        if(len(data_parts)>1):
+            body = data_parts[1]
+        else:
+            body = ""
+        return body
 
     # read everything from the socket
     def recvall(self, sock):
@@ -110,14 +113,35 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
-    # send everything to the socket
-    def sendRequest(self, sock, request):
-        sock.sendall(request)
-        return
-
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        # print(url)
+        if not (len(url)>0):
+            return HTTPResponse(404,"")
+
+        # set up connection
+        host, path, port = self.get_host_path_port(url)
+        connection = self.connect(host,port)
+
+        # send request
+        # request = "GET / HTTP/1.0\r\n\r\n"
+        request = 'GET ' + path + ' HTTP/1.0\r\n' + \
+                  'Host: ' + host + '\r\n' + \
+                  'User-Agent: curl/7.29.0\r\n' + \
+                  'Accept: */*\r\n' + \
+                  '\r\n'
+
+        connection.sendall(request)
+
+        # got response
+        response = self.recvall(connection)
+
+        # decoding
+        code = self.get_code(response)
+        body = self.get_body(response)
+
+        # disconnect
+        connection.close()
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
@@ -142,4 +166,4 @@ if __name__ == "__main__":
     else:
         print client.command( sys.argv[1] )
 
-    print(client.get_host_path_port(sys.argv[2]))
+    # print(client.get_host_path_port(sys.argv[2]))
