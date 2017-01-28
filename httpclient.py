@@ -67,7 +67,6 @@ class HTTPClient(object):
         except:
             raise
 
-        #print(type(url_parts))
         # get path
         if (len(url_parts)>1):
             path = '/'.join(url_parts[1:])
@@ -124,7 +123,7 @@ class HTTPClient(object):
 
         # send request
         # request = "GET / HTTP/1.0\r\n\r\n"
-        request = 'GET ' + path + ' HTTP/1.0\r\n' + \
+        request = 'GET ' + path + ' HTTP/1.1\r\n' + \
                   'Host: ' + host + '\r\n' + \
                   'User-Agent: curl/7.29.0\r\n' + \
                   'Accept: */*\r\n' + \
@@ -145,8 +144,42 @@ class HTTPClient(object):
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        # print(url)
+        if not (len(url)>0):
+            return HTTPResponse(404,"")
+
+        # set up connection
+        host, path, port = self.get_host_path_port(url)
+        connection = self.connect(host,port)
+
+        # get arguments ready
+        contents = ""
+        if (args!=None):
+            contents = urllib.urlencode(args)
+        # print(type(args))
+
+        # send request
+        request = 'POST ' + path + ' HTTP/1.1\r\n' + \
+                  'Host: ' + host + '\r\n' + \
+                  'User-Agent: curl/7.29.0\r\n' + \
+                  'Content-Length: ' + str(len(contents)) + '\r\n' + \
+                  'Content-Type: application/x-www-form-urlencoded\r\n' + \
+                  'Accept: */*\r\n' + \
+                  '\r\n' + \
+                  contents
+
+        connection.sendall(request)
+
+        # got response
+        response = self.recvall(connection)
+
+        # decoding
+        code = self.get_code(response)
+        body = self.get_body(response)
+
+        # disconnect
+        connection.close()
+
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
