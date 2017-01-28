@@ -125,7 +125,7 @@ class HTTPClient(object):
         # request = "GET / HTTP/1.0\r\n\r\n"
         request = 'GET ' + path + ' HTTP/1.1\r\n' + \
                   'Host: ' + host + '\r\n' + \
-                  'User-Agent: curl/7.29.0\r\n' + \
+                  'User-Agent: httpclient.py\r\n' + \
                   'Accept: */*\r\n' + \
                   '\r\n'
 
@@ -161,7 +161,7 @@ class HTTPClient(object):
         # send request
         request = 'POST ' + path + ' HTTP/1.1\r\n' + \
                   'Host: ' + host + '\r\n' + \
-                  'User-Agent: curl/7.29.0\r\n' + \
+                  'User-Agent: httpclient.py\r\n' + \
                   'Content-Length: ' + str(len(contents)) + '\r\n' + \
                   'Content-Type: application/x-www-form-urlencoded\r\n' + \
                   'Accept: */*\r\n' + \
